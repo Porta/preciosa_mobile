@@ -1,9 +1,17 @@
 /* Este es el modulo js cliente de la API rest */
 
-var BASE_API_URL = "http://preciosdeargentina.com.ar/api/v1";
-var BASE_IMG_URL = "http://preciosdeargentina.com.ar";
+var BASE_URL = "http://localhost:8000";
+// var BASE_URL = "http://preciosdeargentina.com.ar";
+var API_URL = BASE_URL + "/api/v1";
 
+
+// buffer para enviar precios asincronicamente
 var precios_queue = new Queue('precios');
+
+
+// token para evitar peticiones concurrentes.
+var peticion_ajax = null;
+
 
 var consultar_sucursales = function(callback, params) {
     if (typeof(params) === 'undefined') params = {};
@@ -26,8 +34,10 @@ var consultar_sucursales = function(callback, params) {
         data.q = params.q;
     }
 
-    $.ajax({
-        url: BASE_API_URL + "/sucursales/",
+    if (peticion_ajax != null) { peticion_ajax.abort(); }
+
+    peticion_ajax = $.ajax({
+        url: API_URL + "/sucursales/",
         dataType: "json",
         crossDomain: true,
         data: data,
@@ -55,8 +65,10 @@ var consultar_productos = function(callback, params) {
         data.q = params.q;
     }
 
-    $.ajax({
-        url: BASE_API_URL + "/productos/",
+    if (peticion_ajax != null) { peticion_ajax.abort(); }
+
+    peticion_ajax = $.ajax({
+        url: API_URL + "/productos/",
         dataType: "json",
         crossDomain: true,
         data: data,
@@ -69,15 +81,28 @@ var consultar_productos = function(callback, params) {
     })
 };
 
+var mostrar_error = function(opciones) {
+    $elemento = opciones.selector;
+    var html = opciones.error;
+    $elemento.html(html);
+}
+
 var mostrar_sucursales = function(status, response, selector) {
     var $ul = selector,
     html = '';
 
     if (response.count > 0){
-        $.each(response.results, function (i, obj) {
-            html += '<li><a href="#sucursal" data-id="'+obj.id+'" class="sucursal">' +
-                    '<h2>'+ obj.nombre +'</h2>' +
-                    '<p><i class="fa fa-location-arrow"></i> '+obj.direccion+', ' +obj.ciudad+'</p>' +
+        $.each(response.results, function (i, e) {
+            html += '<li><a href="#sucursal" data-id="'+e.id+'" class="sucursal">';
+
+            if (e.cadena) {
+                html += '<h2>'+e.cadena.nombre+' ('+e.nombre+')</h2>';
+            }
+            else {
+                html += '<h2>'+e.nombre+'</h2>';
+            }
+
+            html += '<p><i class="fa fa-location-arrow"></i> '+e.direccion+', ' +e.ciudad_nombre+'</p>' +
                     '</a></li>';
         });
     }
@@ -85,54 +110,59 @@ var mostrar_sucursales = function(status, response, selector) {
         html = '<li><a class="ui-btn ui-shadow ui-corner-all ui-icon-alert ui-btn-icon-left">No se encontraron resultados</a></li>';
     }
 
+    if ($ul.attr('id') === 'sucursales_listview'){
+        // para una busqueda se cachean los resultados.
+        localStorage.ultima_busqueda = html;
+    }
+    actualizar_listview(html, $ul);
+};
+
+var actualizar_listview = function(html, $ul){
     $ul.html(html);
     $ul.listview('refresh');
     $ul.trigger('updatelayout');
-};
+}
 
 
-
-var get_ubicacion = function(callback){
-    // devuelve la ubicacion guardada en localStorage,
+var get_ubicacion = function(success_callback, error_callback) {
+    // Devuelve la ubicacion guardada en localStorage,
     // o la del navigator.
-    // como fallback la del bunker de preciosa ;-)
-    // si callback es una funcion, entonces se llama con la ubicacion
-    // encontrada como parámetro.
 
-    var BUNKER = [-38.925492, -68.050953];
-    var ubicacion;
+    // La función espera dos funciones, una para llamar cuando
+    // se obtiene correctamente una locación y otro callback
+    // para llamar en caso de error.
 
-    if (typeof(localStorage.lat) !== "undefined" && typeof(localStorage.lng) !== "undefined"){
-        ubicacion = [localStorage.lat, localStorage.lng];
-    }else{
-        console.log("navigator");
-        if ( navigator.geolocation ) {
-            function success(pos) {
-                // Location found
-                console.log("navigator success");
-                ubicacion = [pos.coords.latitude, pos.coords.longitude];
-                _finally();
-            }
-            function fail(error) {
-                console.log("navigator fail");
-                ubicacion = BUNKER;
-                _finally();
-            }
+    if (localStorage.lat !== undefined  && localStorage.lng !== undefined) {
+        console.log("Recuperando latitud y longitud desde localStorage.");
 
-            function _finally() {
-                if (callback && typeof(callback) === "function") {
-                    console.log(ubicacion);
-                    callback(ubicacion);
-                }
-                return ubicacion;
-            }
+        var ubicacion = {lat: localStorage.lat, lng: localStorage.lng};
+        success_callback(ubicacion);
 
-            return navigator.geolocation.getCurrentPosition(success, fail, {maximumAge: 500000,
-                                                                     enableHighAccuracy:true,
-                                                                     timeout: 7000});
-        } else {
-            console.log("no navigator");
+    } else {
+
+
+        if (!navigator.geolocation) {
+            error_callback({error: "El navegador no soporta geo-posicionamiento."});
+            return;
         }
+
+        function success(pos) {
+            ubicacion = [pos.coords.latitude, pos.coords.longitude];
+            var ubicacion = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+
+            localStorage.lat = ubicacion.lat;
+            localStorage.lng = ubicacion.lng;
+
+            success_callback(ubicacion);
+        }
+
+        function fail(error) {
+            error_callback({error: "No se pudo conseguir la ubicacion del equipo (motivo: " + error.message + ")"});
+        }
+
+        var options = {maximumAge: 500000, enableHighAccuracy:true, timeout: 10000};
+
+        navigator.geolocation.getCurrentPosition(success, fail, options);
     }
 }
 
@@ -159,8 +189,7 @@ var mostrar_productos = function(status, response, selector) {
     $ul.trigger('updatelayout');
 }
 
-var guardar_precio = function(precio)
-{
+var guardar_precio = function(precio){
     var fecha = new Date();
     var data = {
         precio: precio,
@@ -170,45 +199,54 @@ var guardar_precio = function(precio)
     }
 
     precios_queue.put(data);
-    setTimeout(enviar_precios, 3000);
+
     // - Manejo de interfaz
     $('#votar_precio').popup('close');
     $('#precio_preguntar').hide();
-    $('#precio_agradecer').show();
+    $('#producto_precio').fadeOut('slow', function(){
+            $(this).html('$' + precio);
+            $(this).fadeIn('slow', function(){
+                $('#precio_agradecer').show().delay(5000).fadeOut();
+            });
+    });
     $('#precio_votar_form input[name=precio]').val('');
+
+    setTimeout(enviar_precios, 500);
 }
 
 
 var enviar_precios = function (){
-    console.log('Mandando precios');
-
     var index = precios_queue.qsize();
+    var en_verde = true;
 
     while(index) {
-        e = precios_queue.get();
-
-        var url = BASE_API_URL + '/sucursales/' + e.sid + '/productos/' + e.pid;
-        $.ajax({
-            async: false,
-            global: false,
-            type: 'POST',
-            dataType: 'json',
-            url: url,
-            data: {precio: e.precio, created: e.fecha},
-            error: function(response) {
-                precios_queue.put(e);
-            }
-        });
-
         index--;
+        if (en_verde) {
+            en_verde = false;
+
+            e = precios_queue.get();
+            var url = API_URL + '/sucursales/' + e.sid + '/productos/' + e.pid;
+
+            $.ajax({
+                global: false,
+                type: 'POST',
+                dataType: 'json',
+                url: url,
+                data: {precio: e.precio, created: e.fecha},
+                error: function(response) {
+                    console.log("error" + response);
+                    precios_queue.put(e);
+                },
+                complete: function(response) {
+                    en_verde = true;
+                }
+            });
+        }
     }
 
-    if (precios_queue.qsize() > 0){
-        setTimeout(enviar_precios, 5000);
-    }
+    setTimeout(enviar_precios, 3000);
 }
 
-// ---
 
 $(document).ajaxStart(function () {
     $.mobile.loading('show');
@@ -217,24 +255,55 @@ $(document).ajaxStop(function () {
     $.mobile.loading('hide');
 });
 
-$(document).on("pageshow", "#principal", function() {
 
-    console.log("show principal")
-    get_ubicacion(function(ubicacion) {
-        console.log("ubicacion recibida" + ubicacion);
 
-        consultar_sucursales(
-            mostrar_sucursales,
-            {
-                selector: $('#sucursales_cercanas_listview'),
-                lat: ubicacion[0],
-                lon: ubicacion[1],
-                limite: 3
+$(document).on("pagecreate", "#principal", function() {
+
+    $('#tab_recientes').on("click", function(){
+
+        console.log('recientes');
+        var html = '';
+
+        var recientes = JSON.parse(localStorage.sucursales_recientes);
+        console.log(recientes);
+        $.each(recientes, function (e) {
+            if (this.html !== undefined){
+                html += this.html;
             }
-        );
+        });
+        // si quedó vacío, ponemos cartelito.
+        if (html === ''){
+            html = '<li><a class="ui-btn ui-shadow ui-corner-all ui-icon-alert ui-btn-icon-left">No hay sucursales recientes</a></li>';
+        }
 
+        actualizar_listview(html, $('#sucursales_recientes_listview'));
     });
 
+
+
+    $("#tab_cercanas").on("click", function() {
+        // cuando se solicita el tab "cercanas"
+        // se consulta por geolocalizacion
+        console.log('cercanas');
+        function cuando_obtiene_ubicacion(ubicacion) {
+            consultar_sucursales(
+                mostrar_sucursales,
+                {
+                    selector: $('#sucursales_cercanas_listview'),
+                    lat: ubicacion.lat,
+                    lon: ubicacion.lng,
+                    radio: 15,
+                    limite: 5
+                }
+            );
+        }
+
+        function cuando_falla_obtener_ubicacion(error) {
+            mostrar_error({selector: $("#sucursales_cercanas_listview"), error: error.error});
+        }
+
+        get_ubicacion(cuando_obtiene_ubicacion, cuando_falla_obtener_ubicacion);
+    });
 
     $("#sucursales_listview").on("filterablebeforefilter", function (e, data) {
         var $ul = $( this ),
@@ -256,6 +325,12 @@ $(document).on("pageshow", "#principal", function() {
             );
         }
     });
+
+    // se carga la última busqueda realizada.
+    if (localStorage.ultima_busqueda !== undefined){
+        actualizar_listview(localStorage.ultima_busqueda, $('#sucursales_listview'));
+    }
+
 });
 
 $(document).on("pagecreate", "#sucursal", function() {
@@ -290,11 +365,15 @@ $(document).on("pagebeforeshow", "#producto", function() {
 });
 
 $(document).on("pageshow", "#producto", function() {
+
+    // reset de una vista previa
     $('#precio_preguntar').show();
     $('#precio_agradecer').hide();
 
-    $.ajax({
-        url: BASE_API_URL + '/sucursales/' + localStorage.sucursal_id + '/productos/' + localStorage.producto_id,
+    if (peticion_ajax != null) { peticion_ajax.abort(); }
+
+    peticion_ajax = $.ajax({
+        url: API_URL + '/sucursales/' + localStorage.sucursal_id + '/productos/' + localStorage.producto_id,
         dataType: "json",
         crossDomain: true,
         data: {
@@ -307,16 +386,22 @@ $(document).on("pageshow", "#producto", function() {
             $('#producto_nombre').html(response.producto.descripcion);
             $('#producto_upc').html(response.producto.upc);
             if (response.producto.foto !== null) {
-                $('#producto_foto').attr('src', BASE_IMG_URL + response.producto.foto);
+                $('#producto_foto').attr('src', BASE_URL + response.producto.foto);
             }
 
             if (response.mas_probables.length > 0) {
-                $('#producto_precio').html('$' + response.mas_probables[0].precio + '.-');
+                $('#producto_precio').html('$' + response.mas_probables[0].precio);
                 $('#votar_precio_si').data('precio', response.mas_probables[0].precio / 1);
             }
             else {
                 $('#producto_precio').html('Sin precio');
                 $('#votar_precio_si').data('precio', 0);
+
+                // si no hay precio para la sucursal, se pide automáticamente
+                setTimeout(function(){
+                    $('#votar_precio').popup('open', {transition: "pop"});
+                }, 300);
+
             }
 
             if (response.mejores.length > 0) {
@@ -346,7 +431,81 @@ var asignar_sucursal_id = function(e){
 
     localStorage.sucursal_id = sucursal_id;
     console.log({sucursal_id: localStorage.sucursal_id});
+
+    actualizar_recientes(sucursal_id, $(this).parents('li'));
+
 };
+
+var actualizar_recientes = function(sucursal_id, $li){
+    // cuando se asigna una sucursal, se actualiza el contador asociado
+    // para que aparezca en "recientes"
+    // ordena de mas visitadas a menos visitadas y deja las 5 más visitadas
+
+    function compare(a,b) {
+      if (a.contador > b.contador || a == null)
+         return -1;
+      if (a.contador < b.contador || b == null)
+        return 1;
+      // a igual contador, primero el más reciente
+      if (a.ultima_vez > b.ultima_vez)
+        return -1;
+      if (a.ultima_vez < b.ultima_vez)
+        return 1;
+      return 0;
+    }
+
+
+    function unpack_objects(map){
+        var r = {}
+        $.each(map, function(i,e){
+
+            if (e !== null)
+                r[e.id] = e;
+        });
+        return r;
+    };
+
+
+    function pack_objects(hash){
+        var r = []
+        $.each(hash, function(e){
+                r.push(hash[e]);
+        });
+        return r;
+    };
+
+    console.log(localStorage.sucursales_recientes);
+
+    // [{id: XX, html: 'zzz', contador: YY}, { id: ZZ...}, null]
+    var recientes_original = JSON.parse(localStorage.sucursales_recientes);
+
+
+    // { XX: {id: XX, html: 'zzz', contador: YY}, ZZ: {id: ZZ ...}}
+    var recientes = unpack_objects(recientes_original);
+
+    // cómo se hace para obtener el html incluyendo el contenedor?
+    var html = '<li>' + $li.html() + '</li>';
+
+    if (recientes[sucursal_id] !== undefined){
+        recientes[sucursal_id].contador += 1;
+        recientes[sucursal_id].html = html;
+        recientes[sucursal_id].ultima_vez = Date.now();
+    } else {
+        recientes[sucursal_id] = {'contador': 1,
+                                  'html': html,
+                                  'id': sucursal_id,
+                                  'ultima_vez': Date.now()}
+    }
+
+    recientes_original = pack_objects(recientes);
+
+    // queda ordenada y hasta 5.
+    recientes_original.sort(compare);
+    console.log(recientes_original);
+    localStorage.sucursales_recientes = JSON.stringify(recientes_original.slice(0, 5));
+};
+
+
 var asignar_producto_id = function(e){
     var target = $(e.target);
     var producto_id = null;
@@ -369,8 +528,12 @@ $(document).on('pageinit', '#principal', function(){
 $(document).on('pageinit', '#sucursal', function(){
     $(document).on('click', 'a.producto', asignar_producto_id);
 });
+
 $(document).on('pageinit', '#producto', function(){
-    $('#votar_precio_si').click(function(e) {
+
+
+
+    $('#votar_precio_si').on('click', function(e) {
         var precio = $(e.target).data('precio');
 
         if (precio > 0) {
@@ -389,13 +552,12 @@ $(document).on('pageinit', '#producto', function(){
 
     });
 });
+
 $(document).on('pageinit', '#ubicacion', function(){
 
-    get_ubicacion(function(ubicacion) {
-
-        alert([localStorage.lng, localStorage.lat]);
-
-        var point = new google.maps.LatLng(ubicacion[0], ubicacion[1]);
+    function cuando_obtiene_ubicacion(ubicacion) {
+        console.log(ubicacion);
+        var point = new google.maps.LatLng(ubicacion.lat, ubicacion.lng);
 
         function drawMap(latlng) {
             var myOptions = {
@@ -422,8 +584,14 @@ $(document).on('pageinit', '#ubicacion', function(){
               placeMarker(event.latLng);
             });
         }
-        drawMap(point);
 
-    });
+        drawMap(point);
+    }
+
+    function cuando_falla_obtener_ubicacion(error) {
+        console.log("No se pudo obtener la locación (" + error.error + ").");
+    }
+
+    get_ubicacion(cuando_obtiene_ubicacion, cuando_falla_obtener_ubicacion);
 
 });

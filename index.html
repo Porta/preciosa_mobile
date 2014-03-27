@@ -4,9 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" type="text/css" href="css/jquery.mobile-1.4.2.min.css" />
-        <link rel="stylesheet" type="text/css" href="css/font-awesome.css" />
         <link rel="stylesheet" type="text/css" href="css/custom.css" />
-        <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
 
     </head>
 
@@ -14,60 +12,72 @@
         <!-- Página princial -->
         <div data-role="page" id="principal">
             <div data-role="header" data-position="fixed">
-                <h1>Preciosa</h1>
-            </div>
-
-            <div role="main" class="ui-content">
-                <h3>Sucursales cercanas</h3>
-                    <ul id="sucursales_cercanas_listview" data-role="listview" data-inset="true">
-                        <li>Cargando ...</li>
-                    </ul>
-
-                <h3>Buscar sucursal</h3>
-                <ul id="sucursales_listview" data-role="listview" data-inset="true" data-filter="true" data-filter-placeholder="Ej: nombre, dirección..." data-filter-theme="a"></ul>
-                </ul>
-
-                <a href="#ubicacion" class="ui-btn ui-shadow ui-corner-all">Configurar ubicación</a>
-            </div>
-        </div>
-
-        <!-- Página de sucursal -->
-        <div data-role="page" id="sucursal">
-            <div data-role="header" data-position="fixed">
-                <a href="#" data-icon="back" data-rel="back" title="Volver">Volver</a>
                 <h1>Sucursal</h1>
             </div>
 
             <div role="main" class="ui-content">
-                <form>
-                    <input id="scan" data-icon="camera" value="Leer Código de barras" type="button">
-                </form>
 
-                <h3>Buscar producto</h3>
-                <ul id="productos_listview" data-role="listview" data-inset="true" data-filter="true" data-filter-placeholder="Ej: marca, código, descripción..." data-filter-theme="a"></ul>
-                </ul>
+                <div data-role="tabs" id="tabs">
+                  <div data-role="navbar">
+                    <ul>
+                      <li><a href="#sucursal_buscar" class="ui-btn-active" data-ajax="false">Buscar</a></li>
+                      <li><a id='tab_recientes' href="#sucursal_recientes" data-ajax="false">Recientes</a></li>
+                      <li><a id='tab_cercanas' href="#sucursal_cercanas" data-ajax="false">Cercanas</a></li>
+                    </ul>
+                  </div>
+                  <div id="sucursal_buscar" class="ui-body-d ui-content">
+                    <ul id="sucursales_listview" data-role="listview" data-inset="true" data-filter="true" data-filter-placeholder="Ej: cadena, ciudad, calle..." data-filter-theme="a"></ul>
+                    </ul>
+                  </div>
+                  <div id="sucursal_recientes">
+                    <ul id="sucursales_recientes_listview" data-role="listview" data-inset="true">
+                        <li>Cargando sucursales recientes...</li>
+                    </ul>
+                  </div>
+                  <div id="sucursal_cercanas">
+                    <ul id="sucursales_cercanas_listview" data-role="listview" data-inset="true">
+                        <li>Cargando sucursales cercanas...</li>
+                    </ul>
+
+                    <a href="mapa.html#ubicacion" class="ui-btn ui-shadow ui-corner-all" data-icon="navigation" data-ajax="false">Configurar ubicación</a>
+
+                  </div>
+
+
+                </div>
+
             </div>
         </div>
 
-
-        <!-- pagina de ubicacion -->
-        <div data-role="page" id="ubicacion">
+        <!-- Página de buscador de productos. -->
+        <div data-role="page" id="sucursal">
             <div data-role="header" data-position="fixed">
-                <a href="#" data-icon="back" data-rel="back" title="Volver">Volver</a>
-                <h1>Tu ubicación</h1>
+                <a href="#" data-icon="back" data-rel="back" data-iconpos="notext" title="Volver">Volver</a>
+                <h1>Productos</h1>
             </div>
 
-            <div role="main" class="ui-content" id="map-canvas">
-                <!-- map loads here... -->
+            <div role="main" class="ui-content">
+
+
+                <div data-role="tabs" id="tabs_productos">
+                  <div data-role="navbar">
+                    <ul>
+                      <li><a id="tab_productos_buscar" href="#productos_buscar" data-icon="search"  class="ui-btn-active" data-ajax="false">Buscar</a></li>
+                      <li><a id="scan" data-icon="camera" href="#" data-ajax="false" data-iconpos="left">Leer código</a></li>
+                    </ul>
+                  </div>
+
+                  <div id="productos_buscar" class="ui-body-d ui-content">
+                    <ul id="productos_listview" data-role="listview" data-inset="true" data-filter="true" data-filter-placeholder="Ej: marca, código, descripción..." data-filter-theme="a"></ul>
+                  </div>
+                </div>
             </div>
         </div>
-
-
 
         <!-- Página de producto -->
         <div data-role="page" id="producto">
             <div data-role="header" data-position="fixed">
-                <a href="#" data-icon="back" data-rel="back" title="Volver">Volver</a>
+                <a href="#" data-icon="back" data-rel="back" data-iconpos="notext" title="Volver">Volver</a>
                 <h1>Producto</h1>
             </div>
 
@@ -80,32 +90,48 @@
                     <div class="ui-block-b">
                         <h4>Precio en sucursal</h4>
                         <h2 id="producto_precio">Cargando ...</h2>
+
+
+                        <div id="precio_preguntar">
+                            <p><center>¿Coincide con el precio en góndola?</center></p>
+
+
+                            <div data-role="controlgroup" data-type="horizontal">
+                                <a id="votar_precio_si" data-role="button" data-precio="" data-icon="check">Sí</a>
+
+                                <a href="#votar_precio" data-rel="popup"  data-role="button" data-transition="pop" data-position-to="window" data-icon="delete">No</a>
+                            </div>
+
+
+                        <!--
+                            <div id="preciovotar" class="ui-grid-a">
+                                <div class="ui-block-a">
+                                    <a id="votar_precio_si" data-precio="" class="ui-btn ui-shadow ui-corner-all ui-btn-icon-left ui-icon-check ui-btn-inline">Sí</a>
+                                </div>
+                                <div class="ui-block-b">
+                                    <a href="#votar_precio" data-rel="popup" data-transition="pop" data-position-to="window" class="ui-btn ui-shadow ui-corner-all ui-btn-icon-left ui-icon-delete ui-btn-inline">No</a>
+                                </div>
+                            </div>
+
+                         //-->
+                        </div>
+
+                        <div id="precio_agradecer"><p><center>Gracias por la información.</center></p></div>
+
                     </div>
                 </div>
 
-                <div id="precio_preguntar">
-                    <p><center>¿Coincide con el precio en góndola?</center></p>
-                    <div id="preciovotar" class="ui-grid-a">
-                        <div class="ui-block-a">
-                            <a id="votar_precio_si" data-precio="" class="ui-btn ui-shadow ui-corner-all ui-btn-icon-left ui-icon-check ui-btn-inline">Sí</a>
-                        </div>
-                        <div class="ui-block-b">
-                            <a href="#votar_precio" data-rel="popup" data-transition="pop" data-position-to="window" class="ui-btn ui-shadow ui-corner-all ui-btn-icon-left ui-icon-delete ui-btn-inline">No</a>
-                        </div>
-                    </div>
-                </div>
-                <div id="precio_agradecer"><p><center>Gracias por la información.</center></p></div>
 
-                <h4>Mejores precios</h4>
+                <h3>Mejores precios</h3>
                 <ul id="mejores_precios">
                 </ul>
 
-                <div data-role="popup" id="votar_precio" data-theme="a" class="ui-corner-all">
+                <div data-role="popup" id="votar_precio" data-theme="c" class="ui-corner-all">
                     <form id="precio_votar_form">
                         <div style="padding:10px 20px;">
                             <h3>¿Qué precio ves?</h3>
-                            <label for="precio_input" class="ui-hidden-accessible">Username:</label>
-                            <input name="precio" id="precio_input" value="" placeholder="Ej: 9,95" data-theme="a" min="0.01" step="0.01" type="number" required>
+                            <label for="precio_input" class="ui-hidden-accessible">Precio:</label>
+                            <input name="precio" id="precio_input" value="" placeholder="Ej: 9.95" data-theme="a" min="0.01" step="0.01" type="number" required>
                             <button type="submit" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check">Confirmar</button>
                         </div>
                     </form>
