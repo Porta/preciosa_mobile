@@ -4,6 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" type="text/css" href="css/jquery.mobile-1.4.2.min.css" />
+        <link rel="stylesheet" type="text/css" href="css/font-awesome.css" />
         <link rel="stylesheet" type="text/css" href="css/custom.css" />
 
     </head>
@@ -52,7 +53,7 @@
         <!-- Página de buscador de productos. -->
         <div data-role="page" id="sucursal">
             <div data-role="header" data-position="fixed">
-                <a href="#" data-icon="back" data-rel="back" data-iconpos="notext" title="Volver">Volver</a>
+                <a href="#principal" data-icon="back" data-iconpos="notext" title="Volver">Volver</a>
                 <h1>Productos</h1>
             </div>
 
@@ -77,7 +78,7 @@
         <!-- Página de producto -->
         <div data-role="page" id="producto">
             <div data-role="header" data-position="fixed">
-                <a href="#" data-icon="back" data-rel="back" data-iconpos="notext" title="Volver">Volver</a>
+                <a href="#sucursal" data-icon="back" data-iconpos="notext" title="Volver">Volver</a>
                 <h1>Producto</h1>
             </div>
 
@@ -93,7 +94,7 @@
 
 
                         <div id="precio_preguntar">
-                            <p><center>¿Coincide con el precio en góndola?</center></p>
+                            <p><center>¿Es correcto?</center></p>
 
 
                             <div data-role="controlgroup" data-type="horizontal">
@@ -123,8 +124,17 @@
 
 
                 <h3>Mejores precios</h3>
-                <ul id="mejores_precios">
+
+
+                <ul id="mejores_precios" class"ui-listview ui-listview-inset ui-corner-all ui-shadow" data-inset="true" data-role="listview">
                 </ul>
+
+
+                <h3>Productos similares</h3>
+
+                <ul id="similares" class"ui-listview ui-listview-inset ui-corner-all ui-shadow" data-inset="true" data-role="listview">
+                </ul>
+
 
                 <div data-role="popup" id="votar_precio" data-theme="c" class="ui-corner-all">
                     <form id="precio_votar_form">
@@ -139,6 +149,9 @@
 
             </div>
         </div>
+
+        <!-- una pagina vacia que se usa en la redireccion de productos similares -->
+        <div data-role="page" id="empty_page_content"></div>
 
         <!-- Modal de "Cargando" -->
         <script type="text/javascript" src="cordova.js"></script>
