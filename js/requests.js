@@ -1,6 +1,6 @@
 /* Este es el modulo js cliente de la API rest */
 
-// var BASE_URL = "http://localhost:8000";
+//var BASE_URL = "http://localhost:8000";
 var BASE_URL = "http://preciosdeargentina.com.ar";
 var API_URL = BASE_URL + "/api/v1";
 
@@ -95,8 +95,8 @@ var mostrar_sucursales = function(status, response, selector) {
         $.each(response.results, function (i, e) {
             html += '<li><a href="#sucursal" data-id="'+e.id+'" class="sucursal">';
 
-            if (e.cadena) {
-                html += '<h2>'+e.cadena.nombre+' ('+e.nombre+')</h2>';
+            if (e.cadena_completa) {
+                html += '<h2>'+e.cadena_completa.nombre+' ('+e.nombre+')</h2>';
             }
             else {
                 html += '<h2>'+e.nombre+'</h2>';
@@ -160,7 +160,7 @@ var get_ubicacion = function(success_callback, error_callback) {
             error_callback({error: "No se pudo conseguir la ubicacion del equipo (motivo: " + error.message + ")"});
         }
 
-        var options = {enableHighAccuracy:true,
+        var options = { //enableHighAccuracy:true,
                        timeout: 15000};
 
         navigator.geolocation.getCurrentPosition(success, fail, options);
@@ -205,13 +205,13 @@ var guardar_precio = function(precio){
     $('#votar_precio').popup('close');
     $('#precio_preguntar').hide();
     $('#producto_precio').fadeOut('slow', function(){
-            $(this).html('$' + precio);
+            $(this).html('$' + precio.toFixed(2));
             $(this).fadeIn('slow', function(){
                 $('#precio_agradecer').show().delay(5000).fadeOut();
             });
     });
     $('#precio_votar_form input[name=precio]').val('');
-    $('#no_seas_leecher').remove();
+    $('#no_seas_leecher').hide();
     $('#mejores_precios').fadeIn();
     setTimeout(enviar_precios, 500);
 }
@@ -366,9 +366,7 @@ $(document).on("pagebeforeshow", "#producto", function() {
     $('#producto_upc').html('');
     $('#producto_precio').html('');
     $('#producto_foto').attr('src', 'images/logo.png');
-    $('#mejores_precios').before('<p id="no_seas_leecher" style="visibility: hidden;">Confirmá o corregí el precio en la sucursal para ver los sugeridos...</p>');
     $('#mejores_precios').html('');
-    $('#similares').html('');
 });
 
 $(document).on("pageshow", "#producto", function() {
@@ -414,7 +412,6 @@ $(document).on("pageshow", "#producto", function() {
             if (response.mejores.length > 0) {
                 $('#mejores_precios').hide()
                 $('#no_seas_leecher').attr('style', '').fadeIn();
-
                 response.mejores.forEach(function (e, index) {
                     var extra_class = '';
                     if (index===0){
@@ -434,32 +431,7 @@ $(document).on("pageshow", "#producto", function() {
                 });
             }
             else {
-                $('#no_seas_leecher').remove();
                 $('#mejores_precios').html('<li class="ui-li-static ui-body-inherit ui-first-child ui-last-child">No hay precios sugeridos</li>');
-            }
-
-
-            if (response.similares.length > 0) {
-
-
-                response.similares.forEach(function (e, index) {
-                    var extra_class = '';
-                    if (index===0){
-                        extra_class += ' ui-first-child';
-                    }
-                    if(index === response.mejores.length - 1){
-                        extra_class = ' ui-last-child';
-                    }
-
-                    var li = '<li><a href="#producto" data-id="'+ e.id + '" class="producto_similar ui-btn ui-btn-icon-right ui-icon-carat-r">';
-                        li += e.descripcion + '</a></li>';
-
-                    $('#similares').append(li);
-                });
-
-            }
-            else {
-                $('#similares').html('<li class="ui-li-static ui-body-inherit ui-first-child ui-last-child">No hay productos similares</li>');
             }
         },
     });
@@ -580,40 +552,13 @@ var asignar_producto_id = function(e){
 $(document).on('pageinit', '#principal', function(){
     $(document).on('click', 'a.sucursal', asignar_sucursal_id);
 });
-
 $(document).on('pageinit', '#sucursal', function(){
     $(document).on('click', 'a.producto', asignar_producto_id);
 });
 
-
-$(document).on("pageshow", "#empty_page_content", function() {
-    // cuando se hace click en productos similares, se necesita recargar la pagina
-    // producto con un nuevo producto. Se hace a traves de un paso intermedio,
-    // que redirige a una pagina vacia, y cuando esta carga, redirige de nuevo a
-    // producto
-    $.mobile.changePage(
-      '#producto',
-      {
-        allowSamePageTransition : true,
-        transition              : 'none',
-        showLoadMsg             : false,
-        reloadPage              : false
-       }
-    );
-});
-
-
 $(document).on('pageinit', '#producto', function(){
 
-    //click en productos_similares
-    $(document).on('click', 'a.producto_similar', function(e){
-        asignar_producto_id(e);
-        $.mobile.changePage('#empty_page_content',
-           {allowSamePageTransition : true,
-            transition              : 'none',
-            showLoadMsg             : false,
-            reloadPage              : false});
-        });
+
 
     $('#votar_precio_si').on('click', function(e) {
         var precio = $(e.target).data('precio');

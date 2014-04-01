@@ -53,7 +53,7 @@
         <!-- Página de buscador de productos. -->
         <div data-role="page" id="sucursal">
             <div data-role="header" data-position="fixed">
-                <a href="#principal" data-icon="back" data-iconpos="notext" title="Volver">Volver</a>
+                <a href="#" data-icon="back" data-rel="back" data-iconpos="notext" title="Volver">Volver</a>
                 <h1>Productos</h1>
             </div>
 
@@ -68,6 +68,17 @@
                     </ul>
                   </div>
 
+                  <div id="camara_chota" data-role="popup" class="ui-content" data-dismissible="false">La lectura de códigos de barra depende de la calidad de tu cámara y las condiciones de luz. En caso de que no te funcione, podés ingresar el código manualmente en el buscador.
+
+                    <div data-role="fieldcontain">
+                        <label>
+                        <input type="checkbox" id="camara_chota_check">No mostrar más este mensaje</label>
+                    </div>
+
+                    <button data-icon="check" id="camara_chota_ok">Aceptar</button>
+
+                </div>
+
                   <div id="productos_buscar" class="ui-body-d ui-content">
                     <ul id="productos_listview" data-role="listview" data-inset="true" data-filter="true" data-filter-placeholder="Ej: marca, código, descripción..." data-filter-theme="a"></ul>
                   </div>
@@ -78,7 +89,7 @@
         <!-- Página de producto -->
         <div data-role="page" id="producto">
             <div data-role="header" data-position="fixed">
-                <a href="#sucursal" data-icon="back" data-iconpos="notext" title="Volver">Volver</a>
+                <a href="#" data-icon="back" data-rel="back" data-iconpos="notext" title="Volver">Volver</a>
                 <h1>Producto</h1>
             </div>
 
@@ -125,20 +136,14 @@
 
                 <h3>Mejores precios</h3>
 
+                <p id="no_seas_leecher" style="visibility: hidden;">Confirmá o corregí el precio en la sucursal para ver los sugeridos...</p>
 
                 <ul id="mejores_precios" class"ui-listview ui-listview-inset ui-corner-all ui-shadow" data-inset="true" data-role="listview">
                 </ul>
 
-
-                <h3>Productos similares</h3>
-
-                <ul id="similares" class"ui-listview ui-listview-inset ui-corner-all ui-shadow" data-inset="true" data-role="listview">
-                </ul>
-
-
                 <div data-role="popup" id="votar_precio" data-theme="c" class="ui-corner-all">
                     <form id="precio_votar_form">
-                        <div style="padding:10px 20px; background="#ffffff">
+                        <div style="padding:10px 20px; background: #ffffff;">
                             <h3>¿Qué precio ves?</h3>
                             <label for="precio_input" class="ui-hidden-accessible">Precio:</label>
                             <input name="precio" id="precio_input" value="" placeholder="Ej: 9.95" data-theme="a" min="0.01" step="0.01" type="number" required>
@@ -149,9 +154,6 @@
 
             </div>
         </div>
-
-        <!-- una pagina vacia que se usa en la redireccion de productos similares -->
-        <div data-role="page" id="empty_page_content"></div>
 
         <!-- Modal de "Cargando" -->
         <script type="text/javascript" src="cordova.js"></script>
