@@ -596,7 +596,7 @@ $(document).on("pageshow", "#redireccion", function() {
            }
         );
         if (redireccion.callback !== null){
-            setTimeout(redireccion.callback, 10);
+            setTimeout(redireccion.callback, 500);
         }
     }
     redireccion.page = null;
