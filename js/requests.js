@@ -11,6 +11,7 @@ var precios_queue = new Queue('precios');
 
 // token para evitar peticiones concurrentes.
 var peticion_ajax = null;
+var redireccion = {page: null, callback: null};
 
 
 var consultar_sucursales = function(callback, params) {
@@ -579,6 +580,30 @@ $(document).on('pageinit', '#producto', function(){
 
     });
 });
+
+$(document).on("pageshow", "#redireccion", function() {
+    // cuando se hace click en productos similares, se necesita recargar la pagina
+    // producto con un nuevo producto. Se hace a traves de un paso intermedio,
+    // que redirige a una pagina vacia, y cuando esta carga, redirige de nuevo a
+    // producto
+    if (redireccion.page !== null){
+        $.mobile.changePage(
+          redireccion.page,
+          {
+            allowSamePageTransition : true,
+            transition              : 'none',
+            showLoadMsg             : false
+           }
+        );
+        if (redireccion.callback !== null){
+            setTimeout(redireccion.callback, 10);
+        }
+    }
+    redireccion.page = null;
+    redireccion.callback = null;
+});
+
+
 
 $(document).on('pageinit', '#ubicacion', function(){
 

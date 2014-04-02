@@ -202,18 +202,27 @@ var app = {
         console.log('scan buscar: ' + codigo);
         codigo = codigo.substring(0, codigo.length - 1);
 
-        var $search = $('input[data-type="search"]', '#sucursal');
-        $search.val(codigo);
 
         // debugger;
        // volvemos a la solapa de busqueda
-        setTimeout(function(){
-            $('a[href="#productos_buscar"]').trigger('click');
-            console.log("scan triggered");
-        },500);
-
+       redireccion.page = '#sucursal';
+       redireccion.callback = function (){
+        var $search = $('input[data-type="search"]', '#sucursal');
+        $search.val(codigo);
+        $('#tab_productos_buscar').click();
         $search.trigger('change');
         $search.focus();
+       }
+
+        $.mobile.changePage(
+          '#redireccion',
+          { allowSamePageTransition : true,
+            transition              : 'none',
+            showLoadMsg             : false,
+            reloadPage              : false
+           }
+        );
+
     }
 
 };
